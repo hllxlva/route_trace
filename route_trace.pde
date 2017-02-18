@@ -1,7 +1,7 @@
 boolean flag, L, R, auto;
 float easing = 0.05;
 int[][] data;
-int[] initial_value = {100,100};
+int[] initial_value = {0,0};
 float[] now_pos = new float [2];
 float min_m_dist;
 float pre_min_m_dist = 1000;
@@ -9,12 +9,15 @@ int min_m_dist_num;
 float[] v = new float [2];
 float[] v_t = new float [2];
 float[] v_n = new float [2];
+float[] p_v = new float [2];
+float[] d_v = new float [2];
+float r;
 float vx,vy,vx_t,vy_t,vx_n,vy_n;//接線方向と法線方向の速度
-float e;
+float e, pre_e;//編差
 
 void setup(){
   size(2500,1200);
-  String[] stuff = loadStrings("right_angle.txt");  // 文字列型の配列として，データを読み込み(stuff[0]が1行目の文字列)
+  String[] stuff = loadStrings("position_2.txt");  // 文字列型の配列として，データを読み込み(stuff[0]が1行目の文字列)
   data = new int[stuff.length][];  // 行数は先に特定する必要がある
   for(int i=0; i<stuff.length;i++){
     data[i] = int(split(stuff[i],','));  // 各行の文字列データについて，カンマを区切りとして配列を作成し，整数型に変換したものを data とする
@@ -28,13 +31,14 @@ void setup(){
 }
 
 void draw(){
-  fill(0, 5);
-  rect(0, 0, 2500, 1200);
+  //fill(0, 5);
+  //rect(0, 0, 2500, 1200);//透明に
+  //background(0);
   fill(255);
   //取得したデータを描画
   for (int i = 0; i < data.length; i++) {  //data.length で，配列 data の行数が得られる
     if (data[i].length==2) {//data[i].length で，配列 data の列数が得られる//x,y の２項目があれば
-      ellipse(data[i][0], data[i][1], 3, 3);
+      ellipse(data[i][0], data[i][1], 1, 1);
     }
   }
   
@@ -57,29 +61,47 @@ void draw(){
     }
   }
   flag = true;
-  
   if(min_m_dist_num == data.length - 1){//最後まで行ったら速度0に
     //接線方向の速度
     v_t[0] = 0;
     v_t[1] = 0;
     //法線方向の偏差
     e = 0;
+    p_v[0] = 0;
+    p_v[1] = 0;
+    d_v[0] = 0;
+    d_v[1] = 0;
   }else{
     //接線方向の速度
     v_t[0] = data[min_m_dist_num + 1][0] - data[min_m_dist_num][0];
     v_t[1] = data[min_m_dist_num + 1][1] - data[min_m_dist_num][1];
+    r = sqrt(sq(v_t[0])+sq(v_t[1]));
+    v_t[0] = v_t[0]/r;
+    v_t[1] = v_t[1]/r;
     //法線方向の偏差
+    pre_e = e;
     e = sqrt(sq((data[min_m_dist_num][1] - now_pos[1])*(v_t[0])+(now_pos[0] - data[min_m_dist_num][0])*(v_t[1]))/(sq(v_t[0])+sq(v_t[1])));
+    //線のどちら側にあるかを調べる
+    if(v_t[0]*(data[min_m_dist_num][1] - now_pos[1])+v_t[1]*(now_pos[0] - data[min_m_dist_num][0]) > 0){
+      e = -e;
+    }
+    //法線方向の比例制御
+    p_v[0] = e * +v_t[1]/r;
+    p_v[1] = e * -v_t[0]/r;
+    //法線方向の微分制御
+    d_v[0] = (pre_e - e) * +v_t[1]/r;
+    d_v[1] = (pre_e - e) * -v_t[0]/r;
   }
-  //法線方向の速度
+  //法線方向の速度使わないと決めた
   v_n[0] = data[min_m_dist_num][0] - now_pos[0];
   v_n[1] = data[min_m_dist_num][1] - now_pos[1];
-  v[0] = v_t[0]*0.85 + v_n[0]*0.15;
-  v[1] = v_t[1]*0.85 + v_n[1]*0.15;
+  float Kt = 20/*20*/, Kp = 10/*5*/, Kd = 10;//2
+  v[0] = v_t[0]*Kt + p_v[0]*Kp + d_v[0]*Kd;
+  v[1] = v_t[1]*Kt + p_v[1]*Kp + d_v[1]*Kd;
   float R = sq(v[0]) + sq(v[1]);
-  if(R>sq(5)){//最高速度
-    v[0] = 5*v[0]/sqrt(R);
-    v[1] = 5*v[1]/sqrt(R);
+  if(R>sq(10)){//最高速度
+    v[0] = 10*v[0]/sqrt(R);
+    v[1] = 10*v[1]/sqrt(R);
   }
   
   
@@ -89,7 +111,7 @@ void draw(){
   }
   
   
-  text(pre_min_m_dist,100,100);
+  //text(r,100,100);
   translate(now_pos[0],now_pos[1]);
   fill(255,0,0);
   ellipse(0,0,10,10);
