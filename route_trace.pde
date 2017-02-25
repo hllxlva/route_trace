@@ -6,14 +6,14 @@ float[] now_pos = new float [3];
 float min_m_dist;
 float pre_min_m_dist = 1000;
 int min_m_dist_num;
-float[] v = new float [2];
+float[] v = new float [3];
 float[] v_t = new float [2];
 float[] v_n = new float [2];
 float[] p_v = new float [2];
 float[] d_v = new float [2];
 float r;
 float vx,vy,vx_t,vy_t,vx_n,vy_n;//接線方向と法線方向の速度
-float e, pre_e, eq, pre_eq;//編差
+float e, pre_e, eq, pre_eq, pre_pos;//編差
 float slow_stop = 1.0;
 float slow = 5;//スローで何％まで落とすか
 float pre_r;
@@ -22,6 +22,7 @@ float[][] C = {{100, 0}, //Censerの位置
                {-100, 0},
                {0, -100}};
 float[][] Cr = new float[4][2];//Censerの極座標表示[0] = x,[1] = y
+float[] v_max = {10,100};
 
 void setup(){
   size(2500,1200);
@@ -45,7 +46,7 @@ void setup(){
 void draw(){
   fill(0, 5);
   rect(0, 0, 2500, 1200);//透明に
-  //background(0);
+  background(0);
   fill(255);
   //取得したデータを描画
   for (int i = 0; i < data.length; i++) {  //data.length で，配列 data の行数が得られる
@@ -130,37 +131,43 @@ void draw(){
   
   //制御の係数を代入
   float Kt = 20/*20*/, Kp = 2/*5*/, Kd = 2;//2
+  //速度=接線方向の速度+法線方向の偏差に比例した分近づく-偏差の変化率が大きすぎる分
   v[0] = v_t[0]*Kt*slow_stop + p_v[0]*Kp + d_v[0]*Kd;
   v[1] = v_t[1]*Kt*slow_stop + p_v[1]*Kp + d_v[1]*Kd;
   float R = sq(v[0]) + sq(v[1]);
-  if(R>sq(10)){//最高速度
-    v[0] = 10*v[0]/sqrt(R);
-    v[1] = 10*v[1]/sqrt(R);
+  if(R>sq(v_max[0])){//最高速度
+    v[0] = v_max[0]*v[0]/sqrt(R);
+    v[1] = v_max[0]*v[1]/sqrt(R);
   }
   
   //------------角度操作---------------------
   pre_eq = eq;
   eq = data[min_m_dist_num][2] - now_pos[2];
-  float Cp = 2, Cd = 2;
-  v[2] = eq * Cp + (pre_eq - eq) * Cd;//-----------------------------ここから
+  float Cp = 0.1, Cd = 0.5;
+  v[2] = eq * Cp - (pre_pos - now_pos[2]) * Cd;
+  //if(abs(v[2]) > v_max[1])v[2] = v_max[1];
+  pre_pos = now_pos[2];
   
   if(L){
     now_pos[0] = now_pos[0] + v[0];
     now_pos[1] = now_pos[1] + v[1];
+    now_pos[2] = now_pos[2] + v[2];
   }
   
   
-  text(pre_r,100,100);
+  text(now_pos[2],100,100);
   //ロボット描画------------------------------------
-  fill(150);
+  //fill(150);
   translate(now_pos[0],now_pos[1]);//ロボットの中心を(0, 0)に
   rotate(now_pos[2]*PI/180);//ロボットの回転数分回転
+  fill(0,255,0);
   for (int i = 0; i < 4; i++) {//各センサー部分
     rotate(-Cr[i][1]);//センサーの位置に
     translate(Cr[i][0],0);//移動する
     rect(-2,-5,4,10);//センサー描画
     translate(-Cr[i][0],0);
     rotate(Cr[i][1]);
+    fill(150);
   }
   fill(255,0,0);
   ellipse(0, 0, 10, 10);//中心点
