@@ -1,8 +1,8 @@
-boolean flag, L, R, auto;
+boolean flag, L, R, PRE_R = true;//, auto;
 float easing = 0.05;
 int[][] data;
 int[] initial_value = {0,0};
-float[] now_pos = new float [2];
+float[] now_pos = new float [3];
 float min_m_dist;
 float pre_min_m_dist = 1000;
 int min_m_dist_num;
@@ -13,11 +13,19 @@ float[] p_v = new float [2];
 float[] d_v = new float [2];
 float r;
 float vx,vy,vx_t,vy_t,vx_n,vy_n;//接線方向と法線方向の速度
-float e, pre_e;//編差
+float e, pre_e, eq, pre_eq;//編差
+float slow_stop = 1.0;
+float slow = 5;//スローで何％まで落とすか
+float pre_r;
+float[][] C = {{100, 0}, //Censerの位置
+               {0, 100}, 
+               {-100, 0},
+               {0, -100}};
+float[][] Cr = new float[4][2];//Censerの極座標表示[0] = x,[1] = y
 
 void setup(){
   size(2500,1200);
-  String[] stuff = loadStrings("position_2.txt");  // 文字列型の配列として，データを読み込み(stuff[0]が1行目の文字列)
+  String[] stuff = loadStrings("theta.txt");  // 文字列型の配列として，データを読み込み(stuff[0]が1行目の文字列)
   data = new int[stuff.length][];  // 行数は先に特定する必要がある
   for(int i=0; i<stuff.length;i++){
     data[i] = int(split(stuff[i],','));  // 各行の文字列データについて，カンマを区切りとして配列を作成し，整数型に変換したものを data とする
@@ -28,16 +36,20 @@ void setup(){
     now_pos[i] = initial_value[i];
   }
   background(0);
+  for (int i = 0; i < 4; i++) {
+     Cr[i][0] = sqrt(C[i][0]*C[i][0]+C[i][1]*C[i][1]);
+     Cr[i][1] = i*PI/2;
+  }
 }
 
 void draw(){
-  //fill(0, 5);
-  //rect(0, 0, 2500, 1200);//透明に
+  fill(0, 5);
+  rect(0, 0, 2500, 1200);//透明に
   //background(0);
   fill(255);
   //取得したデータを描画
   for (int i = 0; i < data.length; i++) {  //data.length で，配列 data の行数が得られる
-    if (data[i].length==2) {//data[i].length で，配列 data の列数が得られる//x,y の２項目があれば
+    if (data[i].length==3) {//data[i].length で，配列 data の列数が得られる//x,y の２項目があれば
       ellipse(data[i][0], data[i][1], 1, 1);
     }
   }
@@ -63,8 +75,18 @@ void draw(){
   flag = true;
   if(min_m_dist_num == data.length - 1){//最後まで行ったら速度0に
     //接線方向の速度
-    v_t[0] = 0;
-    v_t[1] = 0;
+    v_t[0] = data[min_m_dist_num][0] - now_pos[0];
+    v_t[1] = data[min_m_dist_num][1] - now_pos[1];
+    r = sqrt(sq(v_t[0])+sq(v_t[1]));
+    if(PRE_R){
+      pre_r = r;
+      if(pre_r < 1)pre_r = 1;
+      fill(255);
+      rect(0,0,100,100);
+      PRE_R = false;
+    }
+    v_t[0] = v_t[0]/pre_r;
+    v_t[1] = v_t[1]/pre_r;
     //法線方向の偏差
     e = 0;
     p_v[0] = 0;
@@ -72,6 +94,7 @@ void draw(){
     d_v[0] = 0;
     d_v[1] = 0;
   }else{
+    PRE_R = true;
     //接線方向の速度
     v_t[0] = data[min_m_dist_num + 1][0] - data[min_m_dist_num][0];
     v_t[1] = data[min_m_dist_num + 1][1] - data[min_m_dist_num][1];
@@ -95,15 +118,31 @@ void draw(){
   //法線方向の速度使わないと決めた
   v_n[0] = data[min_m_dist_num][0] - now_pos[0];
   v_n[1] = data[min_m_dist_num][1] - now_pos[1];
-  float Kt = 20/*20*/, Kp = 10/*5*/, Kd = 10;//2
-  v[0] = v_t[0]*Kt + p_v[0]*Kp + d_v[0]*Kd;
-  v[1] = v_t[1]*Kt + p_v[1]*Kp + d_v[1]*Kd;
+  
+  //スローストップ
+  int slow_stop_count = data.length-1-min_m_dist_num;
+  if(slow_stop_count <= 20){
+    slow_stop = slow_stop_count/20.0*(1-slow/100) + slow/100;
+    if(slow_stop > 1.0) slow_stop = 1.0;
+  }else{
+    slow_stop = 1.0;
+  }
+  
+  //制御の係数を代入
+  float Kt = 20/*20*/, Kp = 2/*5*/, Kd = 2;//2
+  v[0] = v_t[0]*Kt*slow_stop + p_v[0]*Kp + d_v[0]*Kd;
+  v[1] = v_t[1]*Kt*slow_stop + p_v[1]*Kp + d_v[1]*Kd;
   float R = sq(v[0]) + sq(v[1]);
   if(R>sq(10)){//最高速度
     v[0] = 10*v[0]/sqrt(R);
     v[1] = 10*v[1]/sqrt(R);
   }
   
+  //------------角度操作---------------------
+  pre_eq = eq;
+  eq = data[min_m_dist_num][2] - now_pos[2];
+  float Cp = 2, Cd = 2;
+  v[2] = eq * Cp + (pre_eq - eq) * Cd;//-----------------------------ここから
   
   if(L){
     now_pos[0] = now_pos[0] + v[0];
@@ -111,11 +150,23 @@ void draw(){
   }
   
   
-  //text(r,100,100);
-  translate(now_pos[0],now_pos[1]);
+  text(pre_r,100,100);
+  //ロボット描画------------------------------------
+  fill(150);
+  translate(now_pos[0],now_pos[1]);//ロボットの中心を(0, 0)に
+  rotate(now_pos[2]*PI/180);//ロボットの回転数分回転
+  for (int i = 0; i < 4; i++) {//各センサー部分
+    rotate(-Cr[i][1]);//センサーの位置に
+    translate(Cr[i][0],0);//移動する
+    rect(-2,-5,4,10);//センサー描画
+    translate(-Cr[i][0],0);
+    rotate(Cr[i][1]);
+  }
   fill(255,0,0);
-  ellipse(0,0,10,10);
+  ellipse(0, 0, 10, 10);//中心点
+  rotate(-now_pos[2]*PI/180);
   translate(-now_pos[0],-now_pos[1]);
+  //pointまでの線
   stroke(0,255,0);
   line(data[min_m_dist_num][0],data[min_m_dist_num][1],now_pos[0],now_pos[1]);
   noStroke();
