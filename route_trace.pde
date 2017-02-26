@@ -6,6 +6,7 @@ float[] now_pos = new float [3];
 float min_m_dist;
 float pre_min_m_dist = 1000;
 int min_m_dist_num;
+float[] pre_v =new float [2];
 float[] v = new float [3];
 float[] v_t = new float [2];
 float[] v_n = new float [2];
@@ -15,14 +16,14 @@ float r;
 float vx,vy,vx_t,vy_t,vx_n,vy_n;//接線方向と法線方向の速度
 float e, pre_e, eq, pre_eq, pre_pos;//編差
 float slow_stop = 1.0;
-float slow = 5;//スローで何％まで落とすか
+float slow = 20;//スローで何％まで落とすか
 float pre_r;
 float[][] C = {{100, 0}, //Censerの位置
                {0, 100}, 
                {-100, 0},
                {0, -100}};
 float[][] Cr = new float[4][2];//Censerの極座標表示[0] = x,[1] = y
-float[] v_max = {10,100};
+float[] v_max = {10,10};
 
 void setup(){
   size(2500,1200);
@@ -46,7 +47,8 @@ void setup(){
 void draw(){
   fill(0, 5);
   rect(0, 0, 2500, 1200);//透明に
-  background(0);
+  //background(0);
+  stroke(255);
   fill(255);
   //取得したデータを描画
   for (int i = 0; i < data.length; i++) {  //data.length で，配列 data の行数が得られる
@@ -54,7 +56,7 @@ void draw(){
       ellipse(data[i][0], data[i][1], 1, 1);
     }
   }
-  
+  noStroke();
   if(!L){
     float targetX = mouseX;
     float targetY = mouseY;
@@ -92,8 +94,8 @@ void draw(){
     e = 0;
     p_v[0] = 0;
     p_v[1] = 0;
-    d_v[0] = 0;
-    d_v[1] = 0;
+    //d_v[0] = 0;//-----------------------------------------------------------------
+    //d_v[1] = 0;//------------------------------------------------------------------
   }else{
     PRE_R = true;
     //接線方向の速度
@@ -113,12 +115,12 @@ void draw(){
     p_v[0] = e * +v_t[1]/r;
     p_v[1] = e * -v_t[0]/r;
     //法線方向の微分制御
-    d_v[0] = (pre_e - e) * +v_t[1]/r;
-    d_v[1] = (pre_e - e) * -v_t[0]/r;
+    //d_v[0] = (pre_e - e) * +v_t[1]/r;//--------------------------------------------------
+    //d_v[1] = (pre_e - e) * -v_t[0]/r;//--------------------------------------------------
   }
   //法線方向の速度使わないと決めた
-  v_n[0] = data[min_m_dist_num][0] - now_pos[0];
-  v_n[1] = data[min_m_dist_num][1] - now_pos[1];
+  //v_n[0] = data[min_m_dist_num][0] - now_pos[0];
+  //v_n[1] = data[min_m_dist_num][1] - now_pos[1];
   
   //スローストップ
   int slow_stop_count = data.length-1-min_m_dist_num;
@@ -130,10 +132,17 @@ void draw(){
   }
   
   //制御の係数を代入
-  float Kt = 20/*20*/, Kp = 2/*5*/, Kd = 2;//2
+  float Kt = 20/*20*/, Kp = 2/*5*/;//, Kd = 2;//2
   //速度=接線方向の速度+法線方向の偏差に比例した分近づく-偏差の変化率が大きすぎる分
-  v[0] = v_t[0]*Kt*slow_stop + p_v[0]*Kp + d_v[0]*Kd;
-  v[1] = v_t[1]*Kt*slow_stop + p_v[1]*Kp + d_v[1]*Kd;
+  v[0] = v_t[0]*Kt*slow_stop + p_v[0]*Kp;// + d_v[0]*Kd;//------------------------------------
+  v[1] = v_t[1]*Kt*slow_stop + p_v[1]*Kp;// + d_v[1]*Kd;//------------------------------------
+  //速度を求めてその大きさの大きさを引く
+  //float V = sq(v[0])+sq(v[1]);//二回目//
+  //d_v[0] = V * +v_t[1]/r;//
+  //d_v[1] = V * -v_t[0]/r;//
+  //v[0] += d_v[0]*Kd;//
+  //v[1] += d_v[1]*Kd;//
+  
   float R = sq(v[0]) + sq(v[1]);
   if(R>sq(v_max[0])){//最高速度
     v[0] = v_max[0]*v[0]/sqrt(R);
@@ -144,8 +153,9 @@ void draw(){
   pre_eq = eq;
   eq = data[min_m_dist_num][2] - now_pos[2];
   float Cp = 0.1, Cd = 0.5;
-  v[2] = eq * Cp - (pre_pos - now_pos[2]) * Cd;
-  //if(abs(v[2]) > v_max[1])v[2] = v_max[1];
+  v[2] = eq * Cp + (now_pos[2] - pre_pos) * Cd;//v[2] = eq * Cp - (pre_pos - now_pos[2]) * Cd;
+  if(v[2] > v_max[1])v[2] = v_max[1];
+  if(v[2] < -v_max[1])v[2] = -v_max[1];
   pre_pos = now_pos[2];
   
   if(L){
