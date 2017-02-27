@@ -13,33 +13,36 @@ float[] v_n = new float [2];
 float[] p_v = new float [2];
 float[] d_v = new float [2];
 float r;
-float vx,vy,vx_t,vy_t,vx_n,vy_n;//æ¥ç·šæ–¹å‘ã¨æ³•ç·šæ–¹å‘ã®é€Ÿåº¦
-float e, pre_e, eq, pre_eq, pre_pos;//ç·¨å·®
-float[] v_max = {10,10};//æœ€é«˜é€Ÿåº¦{ä¸¦é€², å›è»¢}
+float vx,vy,vx_t,vy_t,vx_n,vy_n;//Úü•ûŒü‚Æ–@ü•ûŒü‚Ì‘¬“x
+float e, pre_e, eq, pre_eq, pre_pos;//•Ò·
+float[] v_max = {10,10};//Å‚‘¬“x{•Ài, ‰ñ“]}
 float slow_stop = 1.0;
-float slow = 20;//ã‚¹ãƒ­ãƒ¼ã§ä½•ï¼…ã¾ã§è½ã¨ã™ã‹
+float slow = 20;//ƒXƒ[‚Å‰½“‚Ü‚Å—‚Æ‚·‚©
 float pre_r;
-float[][] C = {{100, 0}, //Censerã®ä½ç½®
+float[][] C = {{100, 0}, //Censer‚ÌˆÊ’u
                {0, 100}, 
                {-100, 0},
                {0, -100}};
-float[][] Cr = new float[4][2];//Censerã®æ¥µåº§æ¨™è¡¨ç¤º[0] = x,[1] = y
-float[][] M = {{100, 100, 45}, //Mecanumã®ä½ç½®
+float[][] Cr = new float[4][2];//Censer‚Ì‹ÉÀ•W•\¦[0] = x,[1] = y
+float[][] M = {{100, 100, 45}, //Mecanum‚ÌˆÊ’u
                {-100, 100, 135}, 
                {-100, -100, 225},
                {100, -100, 315}};
-float[][] Mr = new float[4][2];//Mecanuumã®æ¥µåº§æ¨™è¡¨ç¤º[0] = x,[1] = y
-float[][] Km = new float[4][2];//è¨ˆç®—ä¸Šã®ä¿‚æ•°
+float[][] Mr = new float[4][2];//Mecanuum‚Ì‹ÉÀ•W•\¦[0] = x,[1] = y
+float[][] Km = new float[4][2];//ŒvZã‚ÌŒW”
+float[] V_rotation = new float[2];
+float[] V_translation = new float[2];
+float[] V_resultant = new float[2];
 float[] V_out = new float[4];
 
 void setup(){
   size(2500,1200);
-  String[] stuff = loadStrings("theta.txt");  // æ–‡å­—åˆ—å‹ã®é…åˆ—ã¨ã—ã¦ï¼Œãƒ‡ãƒ¼ã‚¿ã‚’èª­ã¿è¾¼ã¿(stuff[0]ãŒ1è¡Œç›®ã®æ–‡å­—åˆ—)
-  data = new int[stuff.length][];  // è¡Œæ•°ã¯å…ˆã«ç‰¹å®šã™ã‚‹å¿…è¦ãŒã‚ã‚‹
+  String[] stuff = loadStrings("theta.txt");  // •¶š—ñŒ^‚Ì”z—ñ‚Æ‚µ‚ÄCƒf[ƒ^‚ğ“Ç‚İ‚İ(stuff[0]‚ª1s–Ú‚Ì•¶š—ñ)
+  data = new int[stuff.length][];  // s”‚Íæ‚É“Á’è‚·‚é•K—v‚ª‚ ‚é
   for(int i=0; i<stuff.length;i++){
-    data[i] = int(split(stuff[i],','));  // å„è¡Œã®æ–‡å­—åˆ—ãƒ‡ãƒ¼ã‚¿ã«ã¤ã„ã¦ï¼Œã‚«ãƒ³ãƒã‚’åŒºåˆ‡ã‚Šã¨ã—ã¦é…åˆ—ã‚’ä½œæˆã—ï¼Œæ•´æ•°å‹ã«å¤‰æ›ã—ãŸã‚‚ã®ã‚’ data ã¨ã™ã‚‹
+    data[i] = int(split(stuff[i],','));  // Šes‚Ì•¶š—ñƒf[ƒ^‚É‚Â‚¢‚ÄCƒJƒ“ƒ}‚ğ‹æØ‚è‚Æ‚µ‚Ä”z—ñ‚ğì¬‚µC®”Œ^‚É•ÏŠ·‚µ‚½‚à‚Ì‚ğ data ‚Æ‚·‚é
   }
-  //noLoop(); // draw() ã§ãƒ«ãƒ¼ãƒ—ã—ãªã„ã‚ˆã†ã«ã™ã‚‹
+  //noLoop(); // draw() ‚Åƒ‹[ƒv‚µ‚È‚¢‚æ‚¤‚É‚·‚é
   noStroke();
   for (int i = 0; i < 2; i++){
     now_pos[i] = initial_value[i];
@@ -49,6 +52,7 @@ void setup(){
      Cr[i][0] = sqrt(C[i][0]*C[i][0]+C[i][1]*C[i][1]);
      Cr[i][1] = i*PI/2;
   }
+  //irankamo
   for (int i = 0; i < 4; i++) {
      Mr[i][0] = sqrt(M[i][0]*M[i][0]+M[i][1]*M[i][1]);
      Mr[i][1] = PI/4+i*PI/2;
@@ -62,13 +66,13 @@ void setup(){
 
 void draw(){
   //fill(0, 5);
-  //rect(0, 0, 2500, 1200);//é€æ˜ã«
+  //rect(0, 0, 2500, 1200);//“§–¾‚É
   background(0);
   stroke(255);
   fill(255);
-  //å–å¾—ã—ãŸãƒ‡ãƒ¼ã‚¿ã‚’æç”»
-  for (int i = 0; i < data.length; i++) {  //data.length ã§ï¼Œé…åˆ— data ã®è¡Œæ•°ãŒå¾—ã‚‰ã‚Œã‚‹
-    if (data[i].length==3) {//data[i].length ã§ï¼Œé…åˆ— data ã®åˆ—æ•°ãŒå¾—ã‚‰ã‚Œã‚‹//x,y ã®ï¼’é …ç›®ãŒã‚ã‚Œã°
+  //æ“¾‚µ‚½ƒf[ƒ^‚ğ•`‰æ
+  for (int i = 0; i < data.length; i++) {  //data.length ‚ÅC”z—ñ data ‚Ìs”‚ª“¾‚ç‚ê‚é
+    if (data[i].length==3) {//data[i].length ‚ÅC”z—ñ data ‚Ì—ñ”‚ª“¾‚ç‚ê‚é//x,y ‚Ì‚Q€–Ú‚ª‚ ‚ê‚Î
       ellipse(data[i][0], data[i][1], 1, 1);
     }
   }
@@ -80,7 +84,7 @@ void draw(){
     now_pos[1] = now_pos[1] + (targetY - now_pos[1]) * easing;
   }
   
-  for(int i = 0; i < data.length; i++){//ãƒãƒ³ãƒãƒƒã‚¿ãƒ³è·é›¢æœ€å°å€¤
+  for(int i = 0; i < data.length; i++){//ƒ}ƒ“ƒnƒbƒ^ƒ“‹——£Å¬’l
     min_m_dist = sq(now_pos[0]-data[i][0])+sq(now_pos[1]-data[i][1]);
     if(flag){
       pre_min_m_dist = min_m_dist;
@@ -92,8 +96,8 @@ void draw(){
     }
   }
   flag = true;
-  if(min_m_dist_num == data.length - 1){//æœ€å¾Œã¾ã§è¡Œã£ãŸã‚‰é€Ÿåº¦0ã«
-    //æ¥ç·šæ–¹å‘ã®é€Ÿåº¦
+  if(min_m_dist_num == data.length - 1){//ÅŒã‚Ü‚Ås‚Á‚½‚ç‘¬“x0‚É
+    //Úü•ûŒü‚Ì‘¬“x
     v_t[0] = data[min_m_dist_num][0] - now_pos[0];
     v_t[1] = data[min_m_dist_num][1] - now_pos[1];
     r = sqrt(sq(v_t[0])+sq(v_t[1]));
@@ -106,7 +110,7 @@ void draw(){
     }
     v_t[0] = v_t[0]/pre_r;
     v_t[1] = v_t[1]/pre_r;
-    //æ³•ç·šæ–¹å‘ã®åå·®
+    //–@ü•ûŒü‚Ì•Î·
     e = 0;
     p_v[0] = 0;
     p_v[1] = 0;
@@ -114,31 +118,31 @@ void draw(){
     //d_v[1] = 0;//------------------------------------------------------------------
   }else{
     PRE_R = true;
-    //æ¥ç·šæ–¹å‘ã®é€Ÿåº¦
+    //Úü•ûŒü‚Ì‘¬“x
     v_t[0] = data[min_m_dist_num + 1][0] - data[min_m_dist_num][0];
     v_t[1] = data[min_m_dist_num + 1][1] - data[min_m_dist_num][1];
     r = sqrt(sq(v_t[0])+sq(v_t[1]));
     v_t[0] = v_t[0]/r;
     v_t[1] = v_t[1]/r;
-    //æ³•ç·šæ–¹å‘ã®åå·®
+    //–@ü•ûŒü‚Ì•Î·
     pre_e = e;
     e = sqrt(sq((data[min_m_dist_num][1] - now_pos[1])*(v_t[0])+(now_pos[0] - data[min_m_dist_num][0])*(v_t[1]))/(sq(v_t[0])+sq(v_t[1])));
-    //ç·šã®ã©ã¡ã‚‰å´ã«ã‚ã‚‹ã‹ã‚’èª¿ã¹ã‚‹
+    //ü‚Ì‚Ç‚¿‚ç‘¤‚É‚ ‚é‚©‚ğ’²‚×‚é
     if(v_t[0]*(data[min_m_dist_num][1] - now_pos[1])+v_t[1]*(now_pos[0] - data[min_m_dist_num][0]) > 0){
       e = -e;
     }
-    //æ³•ç·šæ–¹å‘ã®æ¯”ä¾‹åˆ¶å¾¡
+    //–@ü•ûŒü‚Ì”ä—á§Œä
     p_v[0] = e * +v_t[1]/r;
     p_v[1] = e * -v_t[0]/r;
-    //æ³•ç·šæ–¹å‘ã®å¾®åˆ†åˆ¶å¾¡
+    //–@ü•ûŒü‚Ì”÷•ª§Œä
     //d_v[0] = (pre_e - e) * +v_t[1]/r;//--------------------------------------------------
     //d_v[1] = (pre_e - e) * -v_t[0]/r;//--------------------------------------------------
   }
-  //æ³•ç·šæ–¹å‘ã®é€Ÿåº¦ä½¿ã‚ãªã„ã¨æ±ºã‚ãŸ
+  //–@ü•ûŒü‚Ì‘¬“xg‚í‚È‚¢‚ÆŒˆ‚ß‚½
   //v_n[0] = data[min_m_dist_num][0] - now_pos[0];
   //v_n[1] = data[min_m_dist_num][1] - now_pos[1];
   
-  //ã‚¹ãƒ­ãƒ¼ã‚¹ãƒˆãƒƒãƒ—
+  //ƒXƒ[ƒXƒgƒbƒv
   int slow_stop_count = data.length-1-min_m_dist_num;
   if(slow_stop_count <= 20){
     slow_stop = slow_stop_count/20.0*(1-slow/100) + slow/100;
@@ -147,25 +151,25 @@ void draw(){
     slow_stop = 1.0;
   }
   
-  //åˆ¶å¾¡ã®ä¿‚æ•°ã‚’ä»£å…¥
+  //§Œä‚ÌŒW”‚ğ‘ã“ü
   float Kt = 20/*20*/, Kp = 2/*5*/;//, Kd = 2;//2
-  //é€Ÿåº¦=æ¥ç·šæ–¹å‘ã®é€Ÿåº¦+æ³•ç·šæ–¹å‘ã®åå·®ã«æ¯”ä¾‹ã—ãŸåˆ†è¿‘ã¥ã-åå·®ã®å¤‰åŒ–ç‡ãŒå¤§ãã™ãã‚‹åˆ†
+  //‘¬“x=Úü•ûŒü‚Ì‘¬“x+–@ü•ûŒü‚Ì•Î·‚É”ä—á‚µ‚½•ª‹ß‚Ã‚­-•Î·‚Ì•Ï‰»—¦‚ª‘å‚«‚·‚¬‚é•ª
   v[0] = v_t[0]*Kt*slow_stop + p_v[0]*Kp;// + d_v[0]*Kd;//------------------------------------
   v[1] = v_t[1]*Kt*slow_stop + p_v[1]*Kp;// + d_v[1]*Kd;//------------------------------------
-  //é€Ÿåº¦ã‚’æ±‚ã‚ã¦ãã®å¤§ãã•ã®å¤§ãã•ã‚’å¼•ã
-  //float V = sq(v[0])+sq(v[1]);//äºŒå›ç›®//
+  //‘¬“x‚ğ‹‚ß‚Ä‚»‚Ì‘å‚«‚³‚Ì‘å‚«‚³‚ğˆø‚­
+  //float V = sq(v[0])+sq(v[1]);//“ñ‰ñ–Ú//
   //d_v[0] = V * +v_t[1]/r;//
   //d_v[1] = V * -v_t[0]/r;//
   //v[0] += d_v[0]*Kd;//
   //v[1] += d_v[1]*Kd;//
   
   float R = sq(v[0]) + sq(v[1]);
-  if(R>sq(v_max[0])){//æœ€é«˜é€Ÿåº¦
+  if(R>sq(v_max[0])){//Å‚‘¬“x
     v[0] = v_max[0]*v[0]/sqrt(R);
     v[1] = v_max[0]*v[1]/sqrt(R);
   }
   
-  //------------è§’åº¦æ“ä½œ---------------------
+  //------------Šp“x‘€ì---------------------
   pre_eq = eq;
   eq = data[min_m_dist_num][2] - now_pos[2];
   float Cp = 0.1, Cd = 0.5;
@@ -180,32 +184,39 @@ void draw(){
     now_pos[2] = now_pos[2] + v[2];
   }
   
-  //å„ãƒ¡ã‚«ãƒŠãƒ å‡ºåŠ›
+  //‰ñ“]•ûŒü‘¬“xƒxƒNƒgƒ‹
+  for (int i = 0; i < 2; i++){
+    V_rotation[i] = (-1+2*i)*v[2]*Km[0][1-1*i];
+  }
+  
+  //ŠeƒƒJƒiƒ€o—Í
   for (int i = 0; i < 4; i++) {
-    V_out[i] = (v[2]*-Km[i][1]/*+v[0]ã“ã“ã«ã ã‘sinã‚’ã‹ã‘ã‚‹*/)*-sin((M[i][2])*PI/180)+(v[2]*Km[i][0]/*+v[1]*/)*cos((M[i][2])*PI/180+now_pos[2]);
+    V_out[i] = -(v[2]*-Km[i][1]/*+v[0]‚±‚±‚É‚¾‚¯sin‚ğ‚©‚¯‚é*/)*sin((M[i][2])*PI/180)+(v[2]*Km[i][0]/*+v[1]*/)*cos((M[i][2])*PI/180);
   }
   
   text(v[2],100,100);
   text(v[2]*-Km[0][1],100,120);
   text(v[2]*Km[0][0],100,140);
-  //ãƒ­ãƒœãƒƒãƒˆæç”»------------------------------------
+  text(V_rotation[1],100,160);
+  
+  //ƒƒ{ƒbƒg•`‰æ------------------------------------
   //fill(150);
-  translate(now_pos[0],now_pos[1]);//ãƒ­ãƒœãƒƒãƒˆã®ä¸­å¿ƒã‚’(0, 0)ã«
-  rotate(-now_pos[2]*PI/180);//ãƒ­ãƒœãƒƒãƒˆã®å›è»¢æ•°åˆ†å›è»¢
+  translate(now_pos[0],now_pos[1]);//ƒƒ{ƒbƒg‚Ì’†S‚ğ(0, 0)‚É
+  rotate(-now_pos[2]*PI/180);//ƒƒ{ƒbƒg‚Ì‰ñ“]”•ª‰ñ“]
   fill(0,255,0);
-  for (int i = 0; i < 4; i++) {//å„ã‚»ãƒ³ã‚µãƒ¼éƒ¨åˆ†
-    rotate(-Cr[i][1]);//ã‚»ãƒ³ã‚µãƒ¼ã®ä½ç½®ã«
-    translate(Cr[i][0],0);//ç§»å‹•ã™ã‚‹
-    rect(-2,-5,4,10);//ã‚»ãƒ³ã‚µãƒ¼æç”»
+  for (int i = 0; i < 4; i++) {//ŠeƒZƒ“ƒT[•”•ª
+    rotate(-Cr[i][1]);//ƒZƒ“ƒT[‚ÌˆÊ’u‚É
+    translate(Cr[i][0],0);//ˆÚ“®‚·‚é
+    rect(-2,-5,4,10);//ƒZƒ“ƒT[•`‰æ
     translate(-Cr[i][0],0);
     rotate(Cr[i][1]);
     fill(150);
   }
   fill(255);
-  for (int i = 0; i < 4; i++) {//å„ãƒ¡ã‚«ãƒŠãƒ éƒ¨åˆ†
-    rotate(-Mr[i][1]);//ãƒ¡ã‚«ãƒŠãƒ ã®ä½ç½®ã«
-    translate(Mr[i][0],0);//ç§»å‹•ã™ã‚‹
-    rect(-2,-5,4,10);//ãƒ¡ã‚«ãƒŠãƒ æç”»
+  for (int i = 0; i < 4; i++) {//ŠeƒƒJƒiƒ€•”•ª
+    rotate(-Mr[i][1]);//ƒƒJƒiƒ€‚ÌˆÊ’u‚É
+    translate(Mr[i][0],0);//ˆÚ“®‚·‚é
+    rect(-2,-5,4,10);//ƒƒJƒiƒ€•`‰æ
     stroke(255,0,0);
     line(0,0,0,-100*V_out[i]);
     noStroke();
@@ -213,10 +224,10 @@ void draw(){
     rotate(Mr[i][1]);
   }
   fill(255,0,0);
-  ellipse(0, 0, 10, 10);//ä¸­å¿ƒç‚¹
+  ellipse(0, 0, 10, 10);//’†S“_
   rotate(now_pos[2]*PI/180);
   translate(-now_pos[0],-now_pos[1]);
-  //pointã¾ã§ã®ç·š
+  //point‚Ü‚Å‚Ìü
   stroke(0,255,0);
   line(data[min_m_dist_num][0],data[min_m_dist_num][1],now_pos[0],now_pos[1]);
   noStroke();
