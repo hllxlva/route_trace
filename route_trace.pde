@@ -30,6 +30,9 @@ float[][] M = {{100, 100, 45}, //Mecanumの位置
                {100, -100, 315}};
 float[][] Mr = new float[4][2];//Mecanuumの極座標表示[0] = x,[1] = y
 float[][] Km = new float[4][2];//計算上の係数
+float[][] V_rotation = new float[4][2];
+float[][] V_translation = new float[4][2];
+float[] V_resultant = new float[2];
 float[] V_out = new float[4];
 
 void setup(){
@@ -49,6 +52,7 @@ void setup(){
      Cr[i][0] = sqrt(C[i][0]*C[i][0]+C[i][1]*C[i][1]);
      Cr[i][1] = i*PI/2;
   }
+  //irankamo
   for (int i = 0; i < 4; i++) {
      Mr[i][0] = sqrt(M[i][0]*M[i][0]+M[i][1]*M[i][1]);
      Mr[i][1] = PI/4+i*PI/2;
@@ -180,14 +184,27 @@ void draw(){
     now_pos[2] = now_pos[2] + v[2];
   }
   
+  //回転方向速度ベクトル
+  for (int j = 0; j < 4; j++) {
+    for (int i = 0; i < 2; i++){
+      V_rotation[j][i] = (-1+2*i)*v[2]*M[j][1-1*i];
+    }
+  }
+  //並進方向速度ベクトル
+  for (int i = 0; i < 4; i++) {
+    V_translation[i][0] =  v[0]*cos(now_pos[2]*PI/180)+v[1]*sin(now_pos[2]*PI/180);
+    V_translation[i][1] = -v[0]*sin(now_pos[2]*PI/180)+v[1]*cos(now_pos[2]*PI/180);
+  }
   //各メカナム出力
   for (int i = 0; i < 4; i++) {
-    V_out[i] = (v[2]*-Km[i][1]/*+v[0]ここにだけsinをかける*/)*-sin((M[i][2])*PI/180)+(v[2]*Km[i][0]/*+v[1]*/)*cos((M[i][2])*PI/180+now_pos[2]);
+    V_out[i] = -(v[2]*-Km[i][1]/*+v[0]ここにだけsinをかける*/)*sin((M[i][2])*PI/180)+(v[2]*Km[i][0]/*+v[1]*/)*cos((M[i][2])*PI/180);
   }
   
   text(v[2],100,100);
-  text(v[2]*-Km[0][1],100,120);
-  text(v[2]*Km[0][0],100,140);
+  text(V_translation[0][0],100,120);
+  text(V_translation[0][1],100,140);
+  text(V_rotation[0][1],100,160);
+  
   //ロボット描画------------------------------------
   //fill(150);
   translate(now_pos[0],now_pos[1]);//ロボットの中心を(0, 0)に
